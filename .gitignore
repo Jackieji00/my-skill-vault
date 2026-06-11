@@ -1,1 +1,6 @@
 requirements.md
+.gemini/
+.draft/
+.tmp/
+*.skill
+.gemini

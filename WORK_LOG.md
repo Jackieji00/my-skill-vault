@@ -1,5 +1,7 @@
 # Project Work Log
 
+[2026-06-11 18:40] | leetcode-sync/ | Refactored skill to use dynamic variables for paths, protecting local privacy. Added WORK_LOG.md and EXPLANATIONS.md for the skill.
+[2026-06-11 18:35] | .gitignore | Added .gemini/ and other temporary directories to untrack local configurations and skill packages.
 [2026-06-11 18:20] | AGENTS.md | Created AGENTS.md to define core behavioral rules, logging standards, and the Plan-Confirm-Execute workflow.
 [2026-06-11 18:05] | morning-routine/SKILL.md | Optimized video transcription logic by introducing readable pseudocode and logic flows.
 [2026-06-11 17:55] | skills/obsidian-pdf-organizer/ | Refactored skill into "Instruction Librarian" with a hierarchical rule system (Global Requirements vs. Folder Guide).
