@@ -20,19 +20,37 @@ metadata:
     - 若原始输出仅为单语，请调用 AI 处理能力将其转换为双语格式（参考 `10_Daily/2026-06-05-论文推荐-双语版.md` 的排版风格）。
 
 ### 2. 待办视频自动处理 (#pending/video)
-- **扫描**：在 Obsidian 库中搜索包含标签 `#pending/video` 的所有笔记。
-- **循环处理每一篇笔记**：
-    1. **提取信息**：从 Frontmatter 的 `url` 字段提取视频链接。
-    2. **加载规范**：读取根目录（或 `_templates/`）下的 `_tags_index.md`。理解其中的标签体系、层级（如：求职、算法、技术栈）及归并规则（如：避免空格、优先用英文算法名）。
-    3. **自动转录**：调用 `bilibili-auto-transcript` 技能处理提取的 URL。
-    4. **智能标签匹配**：
-        - 根据视频转录内容，**优先匹配** `_tags_index.md` 中已有的核心标签。
-        - 若内容涉及新领域，则参照规范创造新标签（小写、连字符、无空格）。
-        - 必须包含维度：主题、技术点、行业（如果是求职相关）。
-    5. **回写笔记**：
-        - 将生成的转录摘要和结构化内容写入原笔记。
-        - 更新 Frontmatter 中的 `tags` 数组。
-        - 将 `#pending/video` 修改为 `#completed/video`（或按照库内习惯标记为已完成）。
+
+**自动化逻辑 (Logic Workflow):**
+
+```python
+# 扫描库中待处理的视频笔记
+pending_notes = search_notes(tag="#pending/video")
+
+for note in pending_notes:
+    # 1. 提取视频源
+    video_url = note.frontmatter.get("url")
+    if not video_url:
+        continue
+
+    # 2. 执行自动转录 (调用 bilibili-auto-transcript)
+    # 流程：CC字幕提取 -> AI 智能摘要 -> 结构化内容生成
+    transcript_data = invoke_skill("bilibili-auto-transcript", url=video_url)
+
+    # 3. 标签规范化处理 (参考 _tags_index.md)
+    # 根据视频内容，自动匹配 [主题/技术点/行业] 维度的标签
+    tag_index = read_file("_tags_index.md")
+    smart_tags = match_tags(content=transcript_data.summary, index=tag_index)
+
+    # 4. 更新笔记内容与元数据
+    note.append_content(transcript_data.formatted_summary)
+    note.update_frontmatter(tags=smart_tags)
+
+    # 5. 任务状态切换与位置归档
+    # 将 #pending/video 标记为已完成，并移动到专项文件夹
+    note.replace_tag(old="#pending/video", new="#completed/video")
+    note.move_to("VideoNotes/")
+```
 
 ### 3. 首页同步与归档管理 (HomePage & Archive Management)
 - **“飞行甲板”定义**：`HomePage.md` 是当天的核心中控台，仅保留“今天”正在处理的信息和汇总，不堆积历史。
