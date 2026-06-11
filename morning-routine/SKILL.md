@@ -33,14 +33,14 @@ for note in pending_notes:
     if not video_url:
         continue
 
-    # 2. 执行自动转录 (调用 bilibili-auto-transcript)
-    # 流程：CC字幕提取 -> AI 智能摘要 -> 结构化内容生成
-    transcript_data = invoke_skill("bilibili-auto-transcript", url=video_url)
+    # 2. 执行自动处理 (调用 universal-video-note-taker)
+    # 流程：多平台支持 -> 字幕提取/Whisper转录 -> AI智能截图 -> 康奈尔笔记生成
+    note_data = invoke_skill("universal-video-note-taker", url=video_url)
 
     # 3. 标签规范化处理 (参考 _tags_index.md)
-    # 根据视频内容，自动匹配 [主题/技术点/行业] 维度的标签
+    # 根据生成的笔记摘要，自动匹配标签
     tag_index = read_file("_tags_index.md")
-    smart_tags = match_tags(content=transcript_data.summary, index=tag_index)
+    smart_tags = match_tags(content=note_data.summary, index=tag_index)
 
     # 4. 更新笔记内容与元数据
     note.append_content(transcript_data.formatted_summary)
