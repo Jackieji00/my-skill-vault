@@ -3,4 +3,4 @@ requirements.md
 .draft/
 .tmp/
 *.skill
-.gemini
+test-outputs/
