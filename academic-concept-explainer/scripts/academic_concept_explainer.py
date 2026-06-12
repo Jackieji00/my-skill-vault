@@ -40,6 +40,7 @@ CACHE_DAYS = 7
 REQUEST_INTERVAL_SECONDS = 3
 MAX_PARAGRAPH_CHARS = 1200
 MAX_QUOTE_CHARS = 900
+MIN_PRIMARY_PASSAGES = 3
 
 TEXTBOOK_SEARCH_QUERIES = [
     "{query} site:deeplearningbook.org",
@@ -348,10 +349,13 @@ def search_sources(query: str, use_scholar: bool = False) -> List[SourceParagrap
     """Search all configured source types and deduplicate passages."""
 
     search_query = expand_query(query)
-    all_passages: List[SourceParagraph] = []
-    all_passages.extend(search_textbook_sources(search_query))
-    all_passages.extend(search_arxiv_sources(search_query))
-    all_passages.extend(search_edu_lectures(search_query))
+    primary_passages: List[SourceParagraph] = []
+    primary_passages.extend(search_textbook_sources(search_query))
+    primary_passages.extend(search_edu_lectures(search_query))
+
+    all_passages: List[SourceParagraph] = list(primary_passages)
+    if len(primary_passages) < MIN_PRIMARY_PASSAGES:
+        all_passages.extend(search_arxiv_sources(search_query))
     all_passages.extend(search_google_scholar_optional(search_query, use_scholar))
     seen: set[str] = set()
     deduped: List[SourceParagraph] = []
@@ -437,6 +441,44 @@ def group_paragraphs(paragraphs: Iterable[SourceParagraph]) -> Dict[str, List[So
     return groups
 
 
+def bilingual_section_title(section: str) -> str:
+    """Return a bilingual section title."""
+
+    mapping = {
+        "背景": "背景 / Background",
+        "数学形式": "数学形式 / Mathematical Form",
+        "变体与相关概念": "变体与相关概念 / Variants and Related Concepts",
+        "应用": "应用 / Applications",
+        "对比与限制": "对比与限制 / Comparisons and Limitations",
+    }
+    return mapping.get(section, section)
+
+
+def chinese_reading_cue(paragraph: SourceParagraph) -> str:
+    """Generate a conservative Chinese reading cue without adding new claims."""
+
+    source_label = {
+        "textbook": "教材或高质量教学资料",
+        "lecture": "大学课程讲义",
+        "arxiv": "arXiv 论文摘要",
+        "scholar": "Google Scholar 结果",
+    }.get(paragraph.source_type, "学术来源")
+
+    text = paragraph.text.lower()
+    cues: List[str] = [f"该段来自{source_label}"]
+    if "benchmark" in text or "evaluation" in text:
+        cues.append("重点与评测/基准有关")
+    if "agent" in text or "multi-agent" in text:
+        cues.append("涉及智能体或多智能体")
+    if "spatial" in text:
+        cues.append("涉及空间推理")
+    if "actor" in text and "critic" in text:
+        cues.append("涉及 actor-critic 方法")
+    if "reinforcement learning" in text:
+        cues.append("涉及强化学习")
+    return "；".join(cues) + "。"
+
+
 def infer_tags(query: str, paragraphs: List[SourceParagraph]) -> List[str]:
     """Infer a small set of Obsidian tags from query and source text."""
 
@@ -508,27 +550,30 @@ def build_note(query: str, result: SearchResult, existing_notes_dir: Path) -> Tu
     lines: List[str] = ["---", f"title: {title}", f"created: {now_date()}", f"source_count: {len(paragraphs)}", "tags:"]
     lines.extend([f"  - {tag}" for tag in tags])
     english_terms = infer_english_terms(query)
-    lines.extend(["---", "", f"# {title}", "", "## 术语 / English Terms", "", f"- 中文 / Display term: {query}"])
+    lines.extend(["---", "", f"# {title}", "", "## 术语 / English Terms", "", f"- 中文 / Chinese: {query}"])
     if english_terms:
         lines.append(f"- English: {', '.join(english_terms)}")
     else:
         lines.append("- English: 未能自动推断，请根据参考文献手动补充。")
-    lines.extend(["", "## 定义", "", "> [!info] 定义"])
+    lines.extend(["", "## 定义 / Definition", "", "> [!info] 定义 / Definition"])
     if definition:
         ref = ref_by_key.get(definition.url + definition.text[:40], "ref1")
-        lines.append(f"> {definition.text} ^[{ref}]")
+        lines.append(f"> **中文提示**：{chinese_reading_cue(definition)} ^[{ref}]")
+        lines.append(f">")
+        lines.append(f"> **Original excerpt**: {definition.text} ^[{ref}]")
     else:
-        lines.append("> 未能从公开来源中可靠提取定义句。")
+        lines.append("> 未能从公开来源中可靠提取定义句。 / No reliable definition sentence was extracted from public sources.")
     lines.append("")
     for section, section_paragraphs in groups.items():
         if not section_paragraphs:
             continue
-        lines.extend([f"## {section}", ""])
+        lines.extend([f"## {bilingual_section_title(section)}", ""])
         for paragraph in section_paragraphs[:5]:
             ref = ref_by_key.get(paragraph.url + paragraph.text[:40], "")
-            lines.append(f"- {paragraph.text} ^[{ref}]")
+            lines.append(f"- **中文提示**：{chinese_reading_cue(paragraph)} ^[{ref}]")
+            lines.append(f"  - **Original excerpt**: {paragraph.text} ^[{ref}]")
         lines.append("")
-    lines.extend(["## 参考文献", ""])
+    lines.extend(["## 参考文献 / References", ""])
     for index, paragraph in enumerate(paragraphs, start=1):
         lines.append(f"- ^ref{index} [{paragraph.title}]({paragraph.url}) ({paragraph.source_type})")
     markdown = "\n".join(lines)

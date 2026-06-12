@@ -7,3 +7,4 @@ test-outputs/
 auth.json
 __pycache__/
 *.pyc
+.venv/

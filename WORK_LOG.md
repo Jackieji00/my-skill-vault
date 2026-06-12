@@ -1,5 +1,6 @@
 # Project Work Log
 
+[2026-06-12 20:32] | academic-concept-explainer/ | Updated source priority to prefer textbooks and university lecture notes before arXiv, and changed generated concept notes to use bilingual section headings, English technical terms, citations, and clickable source links.
 [2026-06-12 20:20] | academic-concept-explainer/ | Added explicit English technical term output and clickable citation-link requirements to the skill and note generator.
 [2026-06-12 20:12] | academic-concept-explainer/scripts/academic_concept_explainer.py | Improved bilingual query expansion for mixed Chinese/English terms such as actor-critic 多智能体 and strengthened definition passage ranking.
 [2026-06-12 20:05] | academic-concept-explainer/scripts/academic_concept_explainer.py | Fixed Windows console Unicode output by forcing stdout/stderr to UTF-8 before printing JSON results.

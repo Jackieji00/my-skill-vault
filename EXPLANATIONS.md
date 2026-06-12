@@ -27,8 +27,10 @@
 
 ### Function-Level Design
 - `search_sources(query, use_scholar)`: input is a query string and optional Scholar flag; output is a list of `SourceParagraph` records from textbook-like pages, arXiv, `.edu` lecture notes, and optional Scholar results.
+- Source priority: `search_sources` first uses textbook-like sources and `.edu` lecture notes; it only calls arXiv when those primary sources produce fewer than 3 passages.
 - `expand_query(query)`: input is the raw user query; output is an expanded bilingual query with common English academic equivalents such as `多智能体 -> multi-agent` and `强化学习 -> reinforcement learning`.
 - `infer_english_terms(query)`: input is the raw user query; output is a deduplicated list of likely English technical terms, used in the note's `术语 / English Terms` section.
+- `chinese_reading_cue(paragraph)`: input is a sourced passage; output is a conservative Chinese cue describing the source type and visible keywords without adding unsourced claims.
 - `extract_definition(query, paragraphs)`: input is the query and retrieved passages; output is the best definition-like `SourceParagraph`, preferring textbook sources.
 - `build_note(query, result, existing_notes_dir)`: input is the query, cached search result, and concept directory; output is `(title, markdown)` for the Obsidian note.
 - `update_moc(moc_file, note_title)`: input is a MOC path and note title; output is an updated MOC file with sorted wikilink entries.

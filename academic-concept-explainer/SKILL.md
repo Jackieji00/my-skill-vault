@@ -19,6 +19,7 @@ Generate a sourced Obsidian concept note for a selected term or question using p
 4. Return the JSON result from the script, especially `success`, `note_path`, and `message`.
 5. If the script reports no reliable sources, do not invent an explanation; tell the user to refine the query.
 6. When answering the user in chat, include the corresponding English technical term and at least one source link whenever a concept explanation is given.
+7. Prefer university/course/textbook sources over arXiv. Use arXiv only when textbook and university lecture sources do not provide enough relevant passages.
 
 ## Script
 
@@ -42,8 +43,8 @@ echo '{"query":"Transformer 的位置编码是如何工作的？","existing_note
 
 - Searches online sources in this order:
   1. Open textbooks and high-quality educational pages.
-  2. arXiv papers.
-  3. `.edu` lecture notes.
+  2. `.edu` university lecture notes.
+  3. arXiv papers only if the first two source types provide fewer than 3 relevant passages.
   4. Google Scholar only if explicitly enabled with `--use-scholar`.
 - Extracts short relevant passages and ranks them with BM25 when available.
 - Selects a definition-like sentence preferentially from textbook sources.
@@ -79,10 +80,12 @@ Do not create unsourced explanatory prose outside the script's extracted and lig
 
 Every generated note must make citation and terminology visible:
 
+- Use bilingual section headings, such as `## 定义 / Definition` and `## 背景 / Background`.
 - Include the likely English technical term near the top of the note.
 - Preserve the original user query as the Chinese/display term.
 - Put a citation marker such as `^[ref1]` after every extracted explanatory passage.
 - In `## 参考文献`, use clickable links: `[Source Title](https://...)`.
+- For every source passage, keep the original excerpt and add a short Chinese reading cue when possible. The reading cue must stay conservative and must not introduce claims beyond the cited passage.
 - If the agent gives a short explanation directly in chat instead of only returning the note path, the chat answer must include:
   - Chinese term.
   - English term.
