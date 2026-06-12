@@ -18,6 +18,7 @@ Generate a sourced Obsidian concept note for a selected term or question using p
 3. Run `scripts/academic_concept_explainer.py`.
 4. Return the JSON result from the script, especially `success`, `note_path`, and `message`.
 5. If the script reports no reliable sources, do not invent an explanation; tell the user to refine the query.
+6. When answering the user in chat, include the corresponding English technical term and at least one source link whenever a concept explanation is given.
 
 ## Script
 
@@ -48,9 +49,11 @@ echo '{"query":"Transformer 的位置编码是如何工作的？","existing_note
 - Selects a definition-like sentence preferentially from textbook sources.
 - Builds a Markdown note with:
   - YAML frontmatter.
+  - A `## 术语 / English Terms` section containing Chinese term, English technical term, and aliases.
   - `> [!info]` definition block.
   - Background, mathematical form, variants, applications, and limitations sections when evidence exists.
-  - Obsidian footnote-style source markers and a reference list.
+  - Obsidian footnote-style source markers after source-backed passages.
+  - A reference list with clickable Markdown links for every cited source.
 - Converts known existing concept names into Obsidian wikilinks when matching files exist in `existing_notes_dir`.
 - Appends the new concept to `moc_file` when provided.
 - Caches query results for 7 days under `cache/`.
@@ -71,6 +74,20 @@ tags:
 ```
 
 Do not create unsourced explanatory prose outside the script's extracted and lightly organized source passages. If summarization is needed, keep it conservative and explicitly source-backed.
+
+## Citation and terminology requirements
+
+Every generated note must make citation and terminology visible:
+
+- Include the likely English technical term near the top of the note.
+- Preserve the original user query as the Chinese/display term.
+- Put a citation marker such as `^[ref1]` after every extracted explanatory passage.
+- In `## 参考文献`, use clickable links: `[Source Title](https://...)`.
+- If the agent gives a short explanation directly in chat instead of only returning the note path, the chat answer must include:
+  - Chinese term.
+  - English term.
+  - 1-3 sentence explanation.
+  - At least one source link.
 
 ## Dependencies
 

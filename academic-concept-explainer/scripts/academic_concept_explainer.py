@@ -121,6 +121,9 @@ def expand_query(query: str) -> str:
         "位置编码": "positional encoding",
         "大语言模型": "large language model",
         "多模态": "multimodal",
+        "交互式空间推理评测": "interactive spatial reasoning benchmark multimodal agents",
+        "交互式空间推理": "interactive spatial reasoning",
+        "空间推理评测": "spatial reasoning benchmark",
     }
     expanded_terms = [query]
     for source, target in expansions.items():
@@ -129,6 +132,35 @@ def expand_query(query: str) -> str:
     if "actor-critic" in query.lower() or "actor critic" in query.lower():
         expanded_terms.append("actor critic reinforcement learning")
     return " ".join(dict.fromkeys(expanded_terms))
+
+
+def infer_english_terms(query: str) -> List[str]:
+    """Infer likely English technical terms for mixed Chinese/English queries."""
+
+    direct_map = {
+        "交互式空间推理评测": ["interactive spatial reasoning benchmark", "interactive spatial reasoning evaluation"],
+        "空间推理": ["spatial reasoning"],
+        "多智能体": ["multi-agent"],
+        "强化学习": ["reinforcement learning"],
+        "自注意力机制": ["self-attention mechanism"],
+        "自注意力": ["self-attention"],
+        "位置编码": ["positional encoding"],
+        "大语言模型": ["large language model", "LLM"],
+        "多模态大模型": ["multimodal large language model", "MLLM"],
+        "具身智能": ["embodied AI"],
+    }
+    terms: List[str] = []
+    for chinese, english_terms in direct_map.items():
+        if chinese in query:
+            terms.extend(english_terms)
+    english_fragments = re.findall(r"[A-Za-z][A-Za-z0-9\- ]{2,}", query)
+    for fragment in english_fragments:
+        cleaned = re.sub(r"\s+", " ", fragment).strip()
+        if cleaned:
+            terms.append(cleaned)
+    if "actor-critic" in query.lower() or "actor critic" in query.lower():
+        terms.extend(["actor-critic", "actor-critic multi-agent reinforcement learning"])
+    return list(dict.fromkeys(terms))
 
 
 def can_fetch(url: str) -> bool:
@@ -475,7 +507,13 @@ def build_note(query: str, result: SearchResult, existing_notes_dir: Path) -> Tu
         ref_by_key[paragraph.url + paragraph.text[:40]] = f"ref{index}"
     lines: List[str] = ["---", f"title: {title}", f"created: {now_date()}", f"source_count: {len(paragraphs)}", "tags:"]
     lines.extend([f"  - {tag}" for tag in tags])
-    lines.extend(["---", "", f"# {title}", "", "## 定义", "", "> [!info] 定义"])
+    english_terms = infer_english_terms(query)
+    lines.extend(["---", "", f"# {title}", "", "## 术语 / English Terms", "", f"- 中文 / Display term: {query}"])
+    if english_terms:
+        lines.append(f"- English: {', '.join(english_terms)}")
+    else:
+        lines.append("- English: 未能自动推断，请根据参考文献手动补充。")
+    lines.extend(["", "## 定义", "", "> [!info] 定义"])
     if definition:
         ref = ref_by_key.get(definition.url + definition.text[:40], "ref1")
         lines.append(f"> {definition.text} ^[{ref}]")
@@ -492,7 +530,7 @@ def build_note(query: str, result: SearchResult, existing_notes_dir: Path) -> Tu
         lines.append("")
     lines.extend(["## 参考文献", ""])
     for index, paragraph in enumerate(paragraphs, start=1):
-        lines.append(f"- ^ref{index} **{paragraph.title}** ({paragraph.source_type})：{paragraph.url}")
+        lines.append(f"- ^ref{index} [{paragraph.title}]({paragraph.url}) ({paragraph.source_type})")
     markdown = "\n".join(lines)
     return title, wikilink_known_concepts(markdown, existing_notes_dir, title)
 
