@@ -1,0 +1,4 @@
+interface:
+  display_name: "Academic Concept Explainer"
+  short_description: "Generate sourced academic concept notes for Obsidian."
+  default_prompt: "Explain a selected academic term or question and create an Obsidian concept note with citations and links."

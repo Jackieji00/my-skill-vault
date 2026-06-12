@@ -1,5 +1,6 @@
 # Project Work Log
 
+[2026-06-12 19:55] | academic-concept-explainer/ / .resource-index | Added the academic concept explainer skill with an executable Python runner, dependency list, OpenAI skill metadata, and resource index entries.
 [2026-06-11 19:45] | Root | Standardized test outputs. Created `test-outputs/` folder and updated `.gitignore` and `requirements.md` to prevent local test files from being committed.
 [2026-06-11 19:35] | universal-video-note-taker/ | Successfully installed Python dependencies (ffmpeg-python, future, etc.) for the video processing engine.
 [2026-06-11 19:10] | universal-video-note-taker/ | Performed a test run on a Xiaohongshu video URL. Verified the Cornell-style template and AI extraction logic. Note generated for user review.
