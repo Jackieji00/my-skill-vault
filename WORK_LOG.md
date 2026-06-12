@@ -1,5 +1,7 @@
 # Project Work Log
 
+[2026-06-12 20:12] | academic-concept-explainer/scripts/academic_concept_explainer.py | Improved bilingual query expansion for mixed Chinese/English terms such as actor-critic 多智能体 and strengthened definition passage ranking.
+[2026-06-12 20:05] | academic-concept-explainer/scripts/academic_concept_explainer.py | Fixed Windows console Unicode output by forcing stdout/stderr to UTF-8 before printing JSON results.
 [2026-06-12 19:55] | academic-concept-explainer/ / .resource-index | Added the academic concept explainer skill with an executable Python runner, dependency list, OpenAI skill metadata, and resource index entries.
 [2026-06-11 19:45] | Root | Standardized test outputs. Created `test-outputs/` folder and updated `.gitignore` and `requirements.md` to prevent local test files from being committed.
 [2026-06-11 19:35] | universal-video-note-taker/ | Successfully installed Python dependencies (ffmpeg-python, future, etc.) for the video processing engine.

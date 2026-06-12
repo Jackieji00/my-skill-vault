@@ -50,6 +50,12 @@ TEXTBOOK_SEARCH_QUERIES = [
 ]
 
 
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8")
+
+
 @dataclass
 class SourceParagraph:
     """A short source passage extracted from an academic source."""
@@ -100,6 +106,29 @@ def tokenize(text: str) -> List[str]:
     """Tokenize English words, numbers, and CJK characters for ranking."""
 
     return re.findall(r"[a-zA-Z0-9_\-]+|[\u4e00-\u9fff]", text.lower())
+
+
+def expand_query(query: str) -> str:
+    """Add common English academic synonyms for mixed Chinese/English queries."""
+
+    expansions = {
+        "多智能体": "multi-agent",
+        "强化学习": "reinforcement learning",
+        "演员": "actor",
+        "评论家": "critic",
+        "自注意力": "self-attention",
+        "注意力机制": "attention mechanism",
+        "位置编码": "positional encoding",
+        "大语言模型": "large language model",
+        "多模态": "multimodal",
+    }
+    expanded_terms = [query]
+    for source, target in expansions.items():
+        if source in query and target.lower() not in query.lower():
+            expanded_terms.append(target)
+    if "actor-critic" in query.lower() or "actor critic" in query.lower():
+        expanded_terms.append("actor critic reinforcement learning")
+    return " ".join(dict.fromkeys(expanded_terms))
 
 
 def can_fetch(url: str) -> bool:
@@ -286,11 +315,12 @@ def search_google_scholar_optional(query: str, enabled: bool) -> List[SourcePara
 def search_sources(query: str, use_scholar: bool = False) -> List[SourceParagraph]:
     """Search all configured source types and deduplicate passages."""
 
+    search_query = expand_query(query)
     all_passages: List[SourceParagraph] = []
-    all_passages.extend(search_textbook_sources(query))
-    all_passages.extend(search_arxiv_sources(query))
-    all_passages.extend(search_edu_lectures(query))
-    all_passages.extend(search_google_scholar_optional(query, use_scholar))
+    all_passages.extend(search_textbook_sources(search_query))
+    all_passages.extend(search_arxiv_sources(search_query))
+    all_passages.extend(search_edu_lectures(search_query))
+    all_passages.extend(search_google_scholar_optional(search_query, use_scholar))
     seen: set[str] = set()
     deduped: List[SourceParagraph] = []
     for passage in all_passages:
@@ -338,7 +368,15 @@ def extract_definition(query: str, paragraphs: List[SourceParagraph]) -> Optiona
     """Select a definition-like passage, preferring textbook sources."""
 
     definition_patterns = [r"\bis defined as\b", r"\brefers to\b", r"\bis\b", r"定义", r"是指", r"指的是"]
-    candidates = sorted(paragraphs, key=lambda item: (0 if item.source_type == "textbook" else 1, -item.score))
+    query_tokens = set(tokenize(expand_query(query)))
+
+    def candidate_score(item: SourceParagraph) -> Tuple[int, int, float]:
+        combined = f"{item.title} {item.text}".lower()
+        overlap = len(query_tokens & set(tokenize(combined)))
+        preferred_source = 0 if item.source_type == "textbook" else 1
+        return (preferred_source, -overlap, -item.score)
+
+    candidates = sorted(paragraphs, key=candidate_score)
     for paragraph in candidates:
         sentences = re.split(r"(?<=[。！？.!?])\s+", paragraph.text)
         for sentence in sentences:
